@@ -1,0 +1,55 @@
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import pandas as pd
+import numpy as np
+import plotly.express as px
+
+data = pd.DataFrame({"x": [1, 2, 3], "SF": [4, 1, 2], "Montreal": [2, 4, 5]})
+
+fig = px.bar(data, x="x", y=["SF", "Montreal"], barmode="group")
+
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
+HEADING_STYLE = {
+    "position": "fixed",
+    "top": 0,
+    "left": 0,
+    "width": "32rem",
+    "text-align": "center",
+    "padding": "2rem 1rem",
+    "background-color": "#3cb371", # medium sea green
+}
+
+HEADING_STYLE1 = {
+    "position": "fixed",
+    "top": 0,
+    "right": 0,
+    "width": "32rem",
+    "text-align": "center",
+    "padding": "2rem 1rem",
+    "background-color": "#3cb371",
+}
+
+heading = html.Div(html.H1(children="Hello Dash"), style=HEADING_STYLE)
+text = html.Div(children='''
+        Dash: A web application framework for Python.
+    ''', style=HEADING_STYLE1)
+# heading2 = html.Div(html.H1(children="Demo Dash"), style=)
+
+app.layout = html.Div(children=[
+    
+    heading,
+
+    text,
+
+    dcc.Graph(
+        id='example-graph',
+        figure=fig
+    )
+])
+
+if __name__ == '__main__':
+    app.run_server(debug=False)
