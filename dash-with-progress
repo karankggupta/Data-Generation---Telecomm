@@ -1,0 +1,105 @@
+import pandas as pd
+import numpy as np
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+
+np.random.seed(10)
+data = pd.DataFrame({'Prod1': np.random.normal(5, 1, 5),
+                     'Prod2': np.random.uniform(0, 1, 5)})
+print(data)
+# a drop down with products
+# 4 buttons to represent pre-processing steps
+
+app = dash.Dash(
+    __name__, meta_tags=[{'name': "bcg_app", 'content': "width=device-width"}]
+)
+
+# Create an app layout
+app.layout = html.Div(
+    [
+        html.Div(
+            [
+                html.H1(
+                    "Analytical Dataset Creation",
+                    style={"margin-bottom": "0px",
+                           "color": "#3cb371"
+                           }
+                )
+            ],
+            id="title",
+            className="row title",
+            style={"margin-bottom": "25px"},
+        ),
+
+        html.Div(
+            [
+                html.H3(
+                    "Data Fields",
+                    style={"margin-bottom": "0px",
+                           "background-color": "#3cb371",
+                           "color": "white",
+                           "margin": "auto",
+                           "width": "50%",
+                           "text-align": "center",
+                           "padding": "10px 0px"}
+                ),
+
+                html.H3(
+                    "Pre-Processing steps to be carried out!",
+                    style={"margin-bottom": "0px",
+                           "background-color": "#3cb371",
+                           "color": "white",
+                           "margin": "auto",
+                           "width": "50%",
+                           "text-align": "center",
+                           "padding": "10px 0px"}
+                )
+            ],
+            id="options",
+            className="row flex-display",
+            style={"margin-bottom": "25px",
+                   "display": "flex",
+                   "flex-direction": "row",
+                   "justify-content": "center",
+                   "gap": "10px"}
+        ),
+
+        html.Div(
+            [
+                dcc.Checklist(
+                   options=[
+                       {'label': 'Coke', 'value': 'Prod1'},
+                       {'label': 'LPG', 'value': 'Prod2'}
+                   ],
+                    value=['Prod1'],
+                    labelStyle={"display": "block",
+                                "height": "auto",
+                                "width": "80px",
+                                "text-align": "center",
+                                "padding": "10px 0px",
+                                "background-color": "#f8f9fa"}
+                ),
+
+                html.Div([
+                    html.Button("Pre1", id="pre1-button"),
+                    html.Button("Pre2", id="pre2-button"),
+                    html.Button("Pre3", id="pre3-button"),
+                    html.Button("Pre4", id="pre4-button")
+                ],
+                    id="interactive_buttons",
+                    className="row-col table",
+                    style={"display": "flex",
+                           "flex-direction": "row",
+                           "gap": "10px"}
+                )
+            ],
+            id="interactive_options",
+            className="row flex-display",
+            style={"display": "flex",
+                   "flex-direction": "row"}
+        )
+    ],
+)
+
+app.run_server(debug=True)
