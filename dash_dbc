@@ -1,0 +1,108 @@
+df = pd.DataFrame({
+    "x": [1,2,1,2],
+    "y": [1,2,3,4],
+    "customdata": [1,2,3,4],
+    "fruit": ["apple", "apple", "orange", "orange"]})
+
+app = dash.Dash(
+    __name__, meta_tags=[{'name': "refinery_app", 'content': "width=device-width"}]
+)
+fig1 = px.scatter(df, x="x", y="y", color="fruit", custom_data=["customdata"])
+
+# Create an app layout
+
+app.layout = html.Div(style={"border": "1px solid #3cb371"},
+    children=[
+        
+        #html.Br(),
+        html.Br(),
+        dbc.Row([
+            dbc.Col([html.H2("Analytical Dataset Creation",
+                            style={"margin-bottom": "0px",
+                                   "color": "#3cb371"
+                                   }
+                            )], width=12
+                   )], className='main-heading'
+                ),
+        
+                    
+        html.Br(),
+        html.Br(),
+        
+        dbc.Row([
+            dbc.Col([
+                dbc.Row([
+                    dbc.Col(html.H3("Datasets", className="datasets"), width=12)
+                        ]),
+                html.Br(),
+                html.Br(),
+
+                dbc.Row([
+                    dbc.Col(
+                    html.H4("File Name", className="Name"), width=4),
+                    dbc.Col(
+                    html.H4("File Link", className="Link"), width=4),
+                        
+
+                    html.Br(),
+                    html.Br(),
+                    dbc.Row([
+                    html.Div(["   "], style={"margin-left": "60px"}),
+                    dbc.Col(dcc.RadioItems(
+                    options=[
+                    {'label': 'Operations', 'value': 'OP'},
+                    {'label': 'Feed Quality', 'value': 'FQ'},
+                    {'label': 'Constraints', 'value': 'Con'},
+                    {'label': 'Prices', 'value': 'Pr'}
+                    ],
+                    value='',
+                    labelStyle={"display": "block",
+                                        #"height": "20px",
+                                        #"width": "300px",
+                                        "text-align": "left",
+                                        #"align-items": "stretch",
+                                        "padding": "5px 20px",
+                                        "background-color": "#f8f9fa"}
+                    ),className='data-options'),
+
+#                     dbc.Col(
+#                         dbc.Row(dcc.Upload(
+#                         id='operations_data',
+#                         children=html.Div([html.A('Operations Data')]),
+#                         className="button-upload-style",
+#                         # Allow multiple files to be uploaded
+#                         multiple=True,disable_click=True),
+#                         className="center_align"),
+
+
+#                         dbc.Row(dcc.Upload(
+#                         id='FQ_data',
+#                         children=html.Div([html.A('LIMS Data')]),
+#                         className="button-upload-style",
+#                         # Allow multiple files to be uploaded
+#                         multiple=True,disable_click=True),
+#                         className="center_align"),
+
+
+#                         dbc.Row(dcc.Upload(
+#                         id='constraints_data',
+#                         children=html.Div([html.A('Constraints Data')]),
+#                         className="button-upload-style",
+#                         # Allow multiple files to be uploaded
+#                         multiple=True,disable_click=True),
+#                         className="center_align"),
+
+#                         dbc.Row(dcc.Upload(
+#                         id='prices_data',
+#                         children=html.Div([html.A('Prices Data')]),
+#                         className="button-upload-style",
+#                         # Allow multiple files to be uploaded
+#                         multiple=True,disable_click=True),
+#                         className="center_align")
+#                             )
+                    ])
+            ])            
+        ])
+    ])
+])       
+app.run_server(debug=False)
