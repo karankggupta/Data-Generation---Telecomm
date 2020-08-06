@@ -1,0 +1,900 @@
+# from poc_utils import *
+from dash.exceptions import PreventUpdate
+import pandas as pd
+import dash_core_components as dcc
+from dash_table import FormatTemplate
+import math
+import flask
+import dash
+import dash_table
+import dash_html_components as html
+import dash_bootstrap_components as dbc
+# from dash.dependencies import Input, Output
+import os
+# from app import app
+from dash.dependencies import Input, Output, State
+import warnings
+# import logging
+# from logging.handlers import RotatingFileHandler
+import plotly.graph_objects as go
+# from PIL import Image
+
+# import plotly.graph_objects as go
+
+warnings.filterwarnings('ignore')
+
+tab_style = {
+    'fontColor': 'green',
+    'backgroundColor': 'white',
+    'text_align':  'center',
+    'fontWeight': 'bold',
+    'font-family': 'Trebuchet MS',
+    'font-size': '1.4rem',
+    'padding': '10px'
+}
+
+tab_selected_style = {
+    # 'fontColor': 'green',
+    'backgroundColor': 'white',
+    'color': 'green',
+    'text_align':  'center',
+    # 'fontWeight': 'bold',
+    'font-family': 'Trebuchet MS',
+    'font-size': '1.4rem',
+    'padding': '10px'
+}
+
+# read user created packages
+
+Data = os.path.join(os.getcwd(), 'Data')
+
+
+def filter_model_data(model_data, filters, mean_flag=1, median_flag=1, std_flag=0, min_flag=1, max_flag=1):
+    dic = [{"mean": mean_flag, "median": median_flag,
+            "std": std_flag, "min": min_flag, "max": max_flag}]
+
+    df = pd.DataFrame(dic)
+
+    filtered_df = pd.DataFrame()
+
+    for i in df.columns:
+        if df[i].iloc[0] == 1:
+            select = list(filters.loc[(filters[i] == 1), "columns"])
+            filtered_df = pd.concat([filtered_df.reset_index(
+                drop=True), model_data[select].reset_index(drop=True)], axis=1)
+
+    select_common = list(
+        filters.loc[(filters["common_include"] == 1), "columns"])
+    filtered_df = pd.concat([filtered_df.reset_index(
+        drop=True), model_data[select_common].reset_index(drop=True)], axis=1)
+
+    return filtered_df
+
+
+##############################################################################################################
+###################################### Overview page UI starts ###############################################
+##############################################################################################################
+
+ads_creation_page = html.Div(style={"backgroundColor": "white"},
+
+                             children=[
+
+                                 html.Br(),
+                                 html.Br(),
+
+                                 dbc.Row([
+                                     dbc.Col([html.H2("Analytical Dataset Creation", className="GraphHeading"
+                                                      )],
+                                             width=12)
+                                 ], className="section_header"),
+
+                                 html.Br(),
+                                 html.Br(),
+
+                                 # 2nd Main Row
+                                 dbc.Row([  # R2
+
+                                     dbc.Col([  # C1
+
+                                         dbc.Row([  # R8
+                                             # dbc.Col([html.Div("   ",style = {"width" : "35px"})],width = 1.5),
+                                             dbc.Col(html.H3("Select Usecase",
+                                                             className="competitor_header_row"), width=12)
+                                         ])  # R8
+                                         , html.Br(),
+
+                                         dbc.Row([  # R9
+                                             html.Div(["   "], style={"margin-left": "60px"}),
+                                             dcc.RadioItems(
+                                                 options=[
+                                                     {'label': 'Parameter Optimization', 'value': 'PO'},
+                                                     {'label': 'Preventive Maintenance', 'value': 'PM',
+                                                      'disabled': True},
+                                                 ],
+                                                 value='',
+                                                 labelStyle={'display': 'inline-block', 'margin': '0 35px 0 35px'},
+                                                 style={'zoom': '1.5'}, className="feature-creation-checkbox",
+                                                 id="radio_ppo"
+                                             )
+                                         ]
+
+                                         )  # R9
+                                         , html.Br(),
+                                         html.Br(),
+
+                                         dbc.Row([  # R3
+                                             # html.Div("   ",style = {"margin-left" : "35px"}),
+                                             dbc.Col(
+                                                 html.H3("Dataset", className="competitor_header_row"), width=4),
+                                             dbc.Col(
+                                                 html.H3("Upload", className="competitor_header_row"), width=4),
+                                             dbc.Col(
+                                                 html.H3("File Name", className="competitor_header_row"), width=4),
+                                             # dbc.Col([])
+                                         ]),  # R3
+                                         dbc.Row(  # R4
+                                             [
+                                                 # html.Div("   ",style = {"margin-left" : "35px"}),
+                                                 dbc.Col(html.H3("Process Parameters", style={
+                                                     'textAlign': 'left'}), width=4),
+                                                 html.Div("   ", style={"margin-left": "40px"}),
+                                                 dbc.Col(dcc.Upload(
+                                                     id='input_process_parameters',
+                                                     children=html.Div([html.A('Browse')]),
+                                                     className="button-upload-style",
+                                                     # Allow multiple files to be uploaded
+                                                     multiple=True, disable_click=True
+                                                 ), width=4, className="center_align"),
+                                                 dbc.Col(html.H4("[Process Params.xlsx]", id="filename_pp", style={
+                                                     'fontSize': '9', 'text-align': 'left'}), width=3),
+                                                 # dbc.Col([],width = 1.5),
+
+                                             ], align='center',
+                                             # style={'margin':'2'}
+                                         ),  # R4
+
+                                         dbc.Row(  # R5
+                                             [
+                                                 # html.Div("   ",style = {"margin-left" : "35px"}),
+                                                 dbc.Col(html.H3("Environmental Conditions",
+                                                                 style={'textAlign': 'left'}), width=4),
+                                                 html.Div("   ", style={"margin-left": "40px"}),
+                                                 dbc.Col(dcc.Upload(
+                                                     id='input_ec',
+                                                     children=html.Div([html.A('Browse')]),
+                                                     className="button-upload-style", disable_click=True,
+                                                     # Allow multiple files to be uploaded
+                                                     multiple=True
+                                                 ), width=4),
+                                                 dbc.Col(html.H4("[Env Conditions.xlsx]", id="filename_ec", style={
+                                                     'fontSize': '9', 'text-align': 'left'}), width=3),
+                                                 # dbc.Col([],width = 1.5),
+
+                                             ], align='center',
+                                             # style={'margin':'2'}
+                                         ),  # R5
+
+                                         dbc.Row(  # R6
+                                             [
+                                                 # html.Div("   ",style = {"margin-left" : "35px"}),
+                                                 dbc.Col(html.H3("Maintenance Schedules", style={
+                                                     'textAlign': 'left'}), width=4),
+                                                 html.Div("   ", style={"margin-left": "40px"}),
+                                                 dbc.Col(dcc.Upload(
+                                                     id='input_pd',
+                                                     children=html.Div([html.A('Browse')]),
+                                                     className="button-upload-style", disable_click=True,
+                                                     # Allow multiple files to be uploaded
+                                                     multiple=True
+                                                 ), width=4),
+                                                 dbc.Col(html.H4("[Schedule data.xlsx]", id="filename_pd", style={
+                                                     'fontSize': '9', 'text-align': 'left'}), width=3),
+                                                 # dbc.Col([],width = 1.5),
+
+                                             ], align='center',
+                                             # style={'margin':'2'}
+                                         ),  # R6
+
+                                         html.Br(),
+
+                                         dbc.Row(  # R10
+                                             [
+                                                 html.Div(["   "], style={"margin-left": "330px"}),
+                                                 dbc.Col([dbc.Button("Upload Files", color="success",
+                                                                     size="sm", className="mr-1", id="button_upload",
+                                                                     disabled=True)], width=6.75)
+
+                                             ])  # R10
+                                         ,
+
+                                         # 1.5 , 4
+
+                                     ], width=5),  # C1
+
+                                     # Putting Image
+
+                                     dbc.Col([
+
+                                         html.Img(src='/assets/arrow_column_final1.png',
+                                                  className="center_align", style={
+                                                 "margin-top": "10px", 'margin-left': "5em"}),
+
+                                     ], width=1),
+
+                                     # First section ends here
+
+                                     dbc.Col(  # Main column 2
+                                         [
+                                             html.Div(  # Div1
+                                                 children=[
+                                                     dbc.Row([  # R11
+                                                         dbc.Col(
+                                                             [html.Div("   ", style={"width": "35px"})], width=1.5),
+                                                         dbc.Col(html.H3("Select Measures for feature creation",
+                                                                         className="competitor_header_row"), width=10)
+                                                     ])  # R11
+                                                     ,
+
+                                                     dbc.Row([  # R12
+
+                                                         html.Div("   ", style={"width": "11em"}),
+                                                         dbc.Col(
+
+                                                             dbc.FormGroup(
+                                                                 [
+                                                                     dbc.Checkbox(
+                                                                         id="checkbox_mean",
+                                                                         className="form-check-input"
+                                                                     ),
+                                                                     dbc.Label(
+                                                                         "   Mean",
+                                                                         html_for="checkbox_mean",
+                                                                         className="feature-creation-checkbox",
+                                                                     ),
+                                                                 ],
+                                                                 check=True, style={'zoom': '1.5'}
+                                                             ), width=2
+
+                                                         ),
+                                                         dbc.Col(
+
+                                                             dbc.FormGroup(
+                                                                 [
+                                                                     dbc.Checkbox(
+                                                                         id="checkbox_minimum",
+                                                                         className="form-check-input"
+                                                                     ),
+                                                                     dbc.Label(
+                                                                         "   Minimum",
+                                                                         html_for="checkbox_minimum",
+                                                                         className="feature-creation-checkbox",
+                                                                     ),
+                                                                 ],
+                                                                 check=True, style={'zoom': '1.5'}
+                                                             ), width=2
+
+                                                         ),
+                                                         dbc.Col(
+
+                                                             dbc.FormGroup(
+                                                                 [
+                                                                     dbc.Checkbox(
+                                                                         id="checkbox_maximum",
+                                                                         className="form-check-input"
+                                                                     ),
+                                                                     dbc.Label(
+                                                                         "Maximum",
+                                                                         html_for="checkbox_maximum",
+                                                                         className="feature-creation-checkbox",
+                                                                     ),
+                                                                 ],
+                                                                 check=True, style={'zoom': '1.5'}
+                                                             ), width=2
+
+                                                         ),
+                                                         dbc.Col(
+
+                                                             dbc.FormGroup(
+                                                                 [
+                                                                     dbc.Checkbox(
+                                                                         id="checkbox_static",
+                                                                         className="form-check-input"
+                                                                     ),
+                                                                     dbc.Label(
+                                                                         "Available",
+                                                                         html_for="checkbox_static",
+                                                                         className="feature-creation-checkbox",
+                                                                     ),
+                                                                 ],
+                                                                 check=True, style={'zoom': '1.5'}
+                                                             ), width=2
+
+                                                         )
+                                                     ]),  # R12
+
+
+                                                     html.Br(),
+                                                     html.Br(),
+                                                     html.Br(),
+                                                     # html.Br(style={'height' : '10px'}),
+
+                                                     dbc.Row([  # R13
+                                                         dbc.Col(
+                                                             [html.Div("   ", style={"width": "35px"})], width=1.5),
+                                                         dbc.Col(html.H3("Select Derived Features",
+                                                                         className="competitor_header_row"), width=10)
+                                                     ]),  # R13
+
+                                                     dbc.Row([  # R14
+
+                                                     ]),
+
+                                                     dbc.Row([  # R14
+                                                         dbc.Col(
+                                                             [html.Div("   ", style={"width": "35px"})], width=1.5),
+                                                         dbc.Col(
+                                                             dbc.Select(
+                                                                 id="dropdown_row1",
+                                                                 options=[
+                                                                     {"label": "Select Feature", "value": "1"},
+                                                                     {"label": "Feature2", "value": "2"},
+                                                                     {"label": "Feature3", "value": "3",
+                                                                      "disabled": True},
+
+                                                                 ],
+                                                                 disabled=True, value="1",
+                                                                 style={'font-size': '17px', 'font-weight': 'bold',
+                                                                        'border-width': '1px', 'border-style': 'solid'}
+                                                             ), width=4
+
+                                                         ),
+                                                         dbc.Col(
+                                                             html.Div(children=["Select Feature from dropdown menu"],
+                                                                      style={
+                                                                          'padding-top': '6px',
+                                                                          'border-color': 'lightgray',
+                                                                          'font-size': '1.4rem',
+                                                                          'font-weight': '648',
+                                                                          'text-align': 'center',
+                                                                          'height': '2.2em',
+                                                                          'width': '100%',
+                                                                          'border-width': '1px',
+                                                                          'border-style': 'solid',
+                                                                          # 'font-size':'1.75rem'
+
+                                                                      }, id="div_dd1"), width=6
+
+                                                         )]),
+
+                                                     dbc.Row([  # R14
+                                                         dbc.Col(
+                                                             [html.Div("   ", style={"width": "35px"})], width=1.5),
+                                                         dbc.Col(
+                                                             dbc.Select(
+                                                                 id="dropdown_row2",
+                                                                 options=[
+                                                                     {"label": "Select Feature", "value": "1"},
+                                                                     {"label": "Feature1", "value": "2"},
+                                                                     {"label": "Feature2", "value": "3",
+                                                                      "disabled": True},
+
+                                                                 ], disabled=True, value="1",
+                                                                 style={'font-size': '17px', 'font-weight': 'bold',
+                                                                        'border-width': '1px', 'border-style': 'solid'}
+                                                             ), width=4
+
+                                                         ),
+                                                         dbc.Col(
+                                                             html.Div(children=["Select Feature from dropdown menu"],
+                                                                      style={
+                                                                          'padding-top': '6px',
+                                                                          'border-color': 'lightgray',
+                                                                          'font-size': '1.4rem',
+                                                                          'font-weight': '648',
+                                                                          'text-align': 'center',
+                                                                          'height': '2.2em',
+                                                                          'width': '100%',
+                                                                          'border-width': '1px',
+                                                                          'border-style': 'solid',
+
+                                                                      }, id="div_dd2"), width=6
+
+                                                         )]),
+
+                                                     html.Br(),
+                                                     html.Br(),
+
+                                                     dbc.Row([  # R17
+                                                         dbc.Col(
+                                                             [html.Div("   ", style={"width": "35px"})], width=1.5),
+                                                         dbc.Col(html.H3("Treat missing values",
+                                                                         className="competitor_header_row"), width=10)
+                                                     ]),  # R17
+
+                                                     html.Br(),
+
+                                                     dbc.Row([  # R18
+                                                         dbc.Col(
+                                                             [html.Div("   ", style={"width": "350px"})], width=2),
+                                                         dbc.Col(
+
+                                                             dbc.FormGroup(
+                                                                 [
+                                                                     dbc.RadioButton(
+                                                                         id="standalone-radio",
+                                                                         className="form-check-input"
+                                                                     ),
+                                                                     dbc.Label(
+                                                                         "Mean Imputation",
+                                                                         html_for="standalone-radio",
+                                                                         className="feature-creation-checkbox",
+                                                                     ),
+                                                                 ],
+                                                                 check=True, style={'zoom': '1.5'}
+                                                             ), width=3),
+                                                         dbc.Col(
+                                                             [html.Div("   ", style={"width": "35px"})], width=1),
+                                                         dbc.Col(
+
+                                                             dbc.FormGroup(
+                                                                 [
+                                                                     dbc.RadioButton(
+                                                                         id="standalone-radio1",
+                                                                         className="form-check-input"
+                                                                     ),
+                                                                     dbc.Label(
+                                                                         "Median Imputation",
+                                                                         html_for="standalone-radio1",
+                                                                         className="feature-creation-checkbox",
+                                                                     ),
+                                                                 ],
+                                                                 check=True, style={'zoom': '1.5'}
+                                                             ), width=4),
+                                                     ]),  # R18
+
+                                                 ])  # Div1
+                                         ], width=6)  # Main column 2
+
+                                 ])  # R2
+
+                                 ,
+                                 html.Br(),
+
+                                 html.Br(),
+
+                                 dbc.Row([
+                                     dbc.Col(dbc.Button("Generate EDA Plots", id="button_generate_eda", size="sm",
+                                                        color="success", className="mr-1", disabled=True,
+                                                        style={'margin-left': '38em'}), width=6),
+                                     dbc.Col(dbc.Button("Next", id="button_next", size="sm", color="success",
+                                                        className="mr-1",
+                                                        style={'margin-left': '0em', 'width': '13%'}, disabled=True),
+                                             width=6)
+                                 ]),
+                                 html.Br(),
+                                 html.Br(),
+
+
+                                 dbc.Row([
+                                     dbc.Col([
+                                         html.Img(src='/assets/down_arrow_final.png')
+                                     ], width={"size": 2, "offset": 5}, className="center_align")
+                                 ]),
+
+                                 html.Br(),
+
+                                 html.Div(  # D1 Div after down arrow
+                                     children=[
+
+                                         dbc.Row([  # Row after after arrow R1
+                                             dbc.Col([html.H2("Exploratory Data Analysis", className="GraphHeading"
+                                                              )],
+                                                     width=12)
+                                         ], className="section_header"),  # End Row after after arrow R1
+
+                                         html.Br(),
+                                         html.Br(),
+                                         html.Br(),
+
+                                         dbc.Row([  # R2
+
+                                             dbc.Col([  # C2 Column for Bar graph
+
+                                                 dbc.Row([html.H3("Goal Metrics", style={
+                                                     'margin-left': '19em', 'margin-top': '0.5em'})]),
+                                                 dbc.Row([
+                                                     dbc.Card([dbc.CardHeader(["Failure %"],
+                                                                              style={'font-size': '1.7em',
+                                                                                     'margin': '0em 0 0em 0.2em',
+                                                                                     'text-align': 'center'}),
+                                                               dbc.CardBody(
+                                                                   "8.2%", style={'font-size': '5em',
+                                                                                  'margin': '0.4em 0 0em 0.7em',
+                                                                                  'color': '#E71C57'},
+                                                                   className="card-title", id='card_ae')
+
+                                                               ], style={'width': '27%', 'height': '20em',
+                                                                         'margin': '6em 1em 0em 12em'}, color='light'),
+
+                                                     dbc.Card([dbc.CardHeader(["Success %"],
+                                                                              style={'font-size': '1.7em',
+                                                                                     'margin': '0em 0 0em 0.2em',
+                                                                                     'text-align': 'center'}),
+                                                               dbc.CardBody(
+                                                                   "91.8%", style={'font-size': '5em',
+                                                                                   'margin': '0.4em 0 0em 0.7em',
+                                                                                   'color': '#30ba75'},
+                                                                   className="card-title", id='card_ce')
+
+                                                               ], style={'width': '27%', 'height': '20em',
+                                                                         'margin': '6em 1em 0em 9em'}, color='light'),
+                                                 ])
+
+                                             ], width=6,  # C2 Column for Bar graph
+
+                                             ),
+                                             dbc.Col([  # C1 Column for Scatter plot
+
+                                                 dbc.Row([  # R3 for input drop down
+
+                                                     dbc.Col([html.H3("Select input variable :  ", style={
+                                                         'margin-left': '0em', 'margin-top': '6px'})], width=4),
+
+                                                     dbc.Col([
+
+                                                         dbc.Select(
+                                                             id="dropdown_scatterplot",
+                                                             options=[
+                                                                 {"label": "atomisation tgt1005",
+                                                                  "value": "atomisation tgt1005"},
+
+                                                             ], value='atomisation tgt1005',
+                                                             style={'font-size': '17px', 'font-weight': 'bold',
+                                                                    'border-width': '1px', 'border-style': 'solid'}
+                                                         )
+
+                                                     ], width=5),
+
+                                                 ]) # End R3
+                                                 ,
+                                                 dbc.Row([  # R4 for Scatter plots
+                                                     html.Div([], style={'margin-left': '-8em',
+                                                                         'margin-top': '5em'},
+                                                              id='div_scatterplot')
+                                                 ]) # End R4
+                                                 ,
+
+                                             ], width=6),  # End C1 Column for Scatter plot
+
+                                         ])  # End R2
+
+                                     ], style={'display': 'None'}, id='div_for_eda'),  # Braces of Div and children
+
+                             ], )
+
+
+
+app_page_layout = html.Div(
+    style={'width': '100%', 'margin': '0%', 'padding': '0px',
+           'backgroundColor': 'white'},
+    children=dcc.Tabs(
+        id='Tabs',
+        style={'height': '52px', 'fontWeight': 'bold',
+               'font-family': 'Trebuchet MS', 'font-size': '1.8rem'},
+        children=dcc.Tab(ads_creation_page, label='Analytical Dataset Creation', id='tab-overview', style=tab_style,
+                         selected_style=tab_selected_style)
+    )
+)
+app = dash.Dash(
+    __name__, meta_tags=[{'name': "refinery_app", 'content': "width=device-width"}],
+    external_stylesheets=[dbc.themes.BOOTSTRAP]
+    # assets_url_path='/assets/'
+)
+
+
+app.layout = html.Div([app_page_layout,
+                       dcc.Interval(id='refresh', interval=200),
+                       dbc.Container([html.Div(id='page-content')])],
+                      style={'backgroundColor': 'white'})
+
+app.run_server(debug=True)
+
+########################################################## CALLBACKS #############################################################
+
+
+################################################ CALLBACKS TO PRINT FILE NAMES   #################################################
+
+files_clicked = []
+
+
+def parse_contents(contents, filename):
+    content_type, content_string = contents.split(',')
+    decoded = base64.b64decode(content_string)
+
+    print("Reading filename")
+    print(filename)
+
+    global df
+
+    try:
+
+        if 'XLS' in filename or 'xls' in filename or 'csv' in filename:
+            print("File read")
+            return filename
+
+        else:
+            return 'Invalid File'
+
+    except Exception as e:
+        print(e)
+        return 'Invalid File'
+
+
+@app.callback(Output('filename_pp', 'children'),
+              [Input('input_process_parameters', 'contents'),
+               Input('input_process_parameters', 'id')],
+              [State('input_process_parameters', 'filename')])
+def pp_filename(list_of_contents, i_d, list_of_names):
+    global children
+    children = ''
+    if list_of_contents is not None:
+        files_clicked.append(i_d)
+        children = [parse_contents(c, n) for c, n in zip(
+            list_of_contents, list_of_names)]
+        return str(children)
+    else:
+        return str(children)
+
+
+@app.callback(Output('filename_ec', 'children'),
+              [Input('input_ec', 'contents'),
+               Input('input_ec', 'id')],
+              [State('input_ec', 'filename')])
+def ec_filename(list_of_contents, i_d, list_of_names):
+    global children
+    children = ''
+    if list_of_contents is not None:
+        files_clicked.append(i_d)
+        children = [parse_contents(c, n) for c, n in zip(
+            list_of_contents, list_of_names)]
+        return str(children)
+    else:
+        return str(children)
+
+
+@app.callback(Output('filename_pd', 'children'),
+              [Input('input_pd', 'contents'),
+               Input('input_pd', 'id')],
+              [State('input_pd', 'filename')])
+def pd_filename(list_of_contents, i_d, list_of_names):
+    global children
+    children = ''
+    if list_of_contents is not None:
+        files_clicked.append(i_d)
+        children = [parse_contents(c, n) for c, n in zip(
+            list_of_contents, list_of_names)]
+        return str(children)
+    else:
+        return str(children)
+
+
+@app.callback(Output('filename_pm', 'children'),
+              [Input('input_pm', 'contents'),
+               Input('input_pm', 'id')],
+              [State('input_pm', 'filename')])
+def pm_filename(list_of_contents, i_d, list_of_names):
+    global children
+    children = ''
+    if list_of_contents is not None:
+        files_clicked.append(i_d)
+        children = [parse_contents(c, n) for c, n in zip(
+            list_of_contents, list_of_names)]
+        return str(children)
+    else:
+        return str(children)
+
+
+# END - CALLBACKS TO PRINT FILE NAME ###############################################333
+
+############################################# CALLBACKS TO GENERATE PPO DROPDOWN ################################################
+
+path1_options = ['Select', 'Vial Thickness', 'Vial Volume']
+path2_options = ['Select', 'AIRFLOW RATIO', "LEFT TO RIGHT TEMP RATIO"]
+
+path1_options = ['Select', 'Vial Heating Exhaust Air Max. Temperature',
+                 'Vial Heating Differential Pressure',
+                 'Mean Glass Vial Outside Diameter (inch)',
+                 'Mean Inside Diameter of the vial (inch)']
+path2_options = ['Select',
+                 'MA2 MEAN EXHAUST AIR TEMPERATURE',
+                 'MA6 MEAN EXHAUST AIR TEMPERATURE',
+                 'MAKE UP ZONE 1 AIRFLOW',
+                 'INLET ZONE AIRFLOW']
+
+@app.callback(
+    [Output('dropdown_row1', 'options'),
+     # Output('div_dd1', 'children'),
+     Output('dropdown_row2', 'options'), Output("button_generate_eda", "disabled"),
+     Output("button_generate_eda", "outline")
+     ],
+    [Input('radio_ppo', 'value')])
+def set_feature_creation_drop_down(radio_ppo):
+    if (radio_ppo == "PO"):
+        return [{'label': i, 'value': i} for i in path1_options], [{'label': i, 'value': i} for i in
+                                                                   path1_options], False, True
+    else:
+        return [{'label': i, 'value': i} for i in path2_options], [{'label': i, 'value': i} for i in
+                                                                   path2_options], False, True
+
+
+scatter_options = ['equip_42_days_since_pm',
+                   'equip_43_days_since_pm', 'equip_44_days_since_pm']
+
+
+@app.callback([Output('div_dd1', 'children'), Output('div_dd2', 'children')],
+              [Input('dropdown_row1', 'value'),
+               Input('dropdown_row2', 'value'),
+               ]
+              )
+def set_feature_drop_down(dd_value1, dd_value2):
+    # print("###################################################")
+
+    print(dd_value1, dd_value2)
+    # print("###################################################")
+    if (dd_value1 == "Vial Volume"):
+        s1 = "Calculated as ratio of Temp. and Pressure"
+    elif (dd_value1 == "Vial Thickness"):
+        s1 = "Calculated as Outside Diameter - Inner Diameter"
+    elif (dd_value1 == "AIRFLOW RATIO"):
+        s1 = "Calculated as ratio of Make up Zone & Inlet Zone Airflow"
+    elif (dd_value1 == "LEFT TO RIGHT TEMP RATIO"):
+        s1 = "Calculated as ratio of left and right zone Temp."
+    else:
+        s1 = "Select Feature from dropdown menu"
+
+    if (dd_value2 == "Vial Volume"):
+        s2 = "Calculated as ratio of Temp. and Pressure"
+    elif (dd_value2 == "Vial Thickness"):
+        s2 = "Calculated as Outside Diameter - Inner Diameter"
+    elif (dd_value2 == "AIRFLOW RATIO"):
+        s2 = "Calculated as ratio of Make up Zone & Inlet Zone Airflow"
+    elif (dd_value2 == "LEFT TO RIGHT TEMP RATIO"):
+        s2 = "Calculated as ratio of left and right zone Temp."
+    else:
+        s2 = "Select Feature from dropdown menu"
+
+    # print(s1,s2)
+    return s1, s2
+
+
+@app.callback(Output('dropdown_scatterplot', 'options'),
+              [Input('radio_ppo', 'value'),
+               Input('button_generate_eda', 'n_clicks')],
+              )
+def set_eda_drop_down(radio_ppo, n):
+    if (n):
+
+        if (radio_ppo == "PO"):
+
+            print(os.path.join(Data))
+            filtered_data = pd.read_excel(os.path.join(Data, 'demo_data.xlsx'))
+
+            print(filtered_data.head())
+
+            filtered_data = filtered_data.drop(
+                ['BatchID', 'FailedBatch'], axis=1)
+
+            scatter_options = []
+            for i in list(filtered_data.columns):
+                scatter_options.append(i)
+
+            print(scatter_options)
+            print([{'label': i, 'value': i} for i in scatter_options])
+
+            return [{'label': i, 'value': i} for i in scatter_options]
+        else:
+            raise PreventUpdate
+
+
+    else:
+        raise PreventUpdate
+
+
+############################################# CALLBACKS TO GENERATE SCATTER PLOTS ################################################
+
+
+@app.callback(
+    Output('div_scatterplot', 'children'),
+    [Input('dropdown_scatterplot', 'value'),
+     Input('radio_ppo', 'value'),
+     Input('button_generate_eda', 'n_clicks')],
+)
+def generate_scatter_plot(value, radio_ppo, n):
+    if (radio_ppo == "PO"):
+        if (n or (value != "")):
+
+            import plotly.express as px
+
+            print(value)
+
+            df = pd.read_excel(os.path.join(Data, 'demo_data.xlsx'))
+
+            df = df.drop(
+                ['BatchID'], axis=1)
+            import plotly.graph_objects as go
+            colors = ['#E71C57', '#30ba75']
+            fig = go.Figure(data=[go.Bar(
+                x=('Failure', 'Success'),
+                y=[df.loc[df["FailedBatch"] == 0, value].mean(), df.loc[df["FailedBatch"] == 1, value].mean()],
+                width=[0.3, 0.3],
+                marker_color=colors,  # marker color can be a single color value or an iterable
+                text=[round(df.loc[df["FailedBatch"] == 0, value].mean(), 2),
+                      round(df.loc[df["FailedBatch"] == 1, value].mean(), 2)],
+                # font = dict(
+                #             size=15,
+                #             color="#7f7f7f"),
+                textposition='outside'
+
+            )])
+            fig.update_layout(title_x=0.5, title_y=0.89,
+                              yaxis_title=value,
+                              title=dict(
+                                  text='Average value of ' + value + " for Failed and Successful events",
+                                  font=dict(
+                                      size=14,
+                                  )
+                              ))
+            return html.Div(
+                dcc.Graph(
+                    id='scatter',
+                    figure=fig, style={'height': '44em', 'width': '81em'}))
+        else:
+            raise PreventUpdate
+    else:
+        raise PreventUpdate
+
+
+########################################### CALLBACKS TO  hide/show div ################################################
+
+@app.callback([Output('button_generate_eda', 'disabled'), Output('button_generate_eda', 'outline')],
+              [Input('button_upload', 'n_clicks')])
+def unhide_button_upload(n):
+    if(n):
+        return False, True
+    else:
+        raise PreventUpdate
+
+
+@app.callback([Output('div_for_eda', 'style'), Output('button_next', 'disabled'), Output('button_next', 'outline')],
+              [Input('button_generate_eda', 'n_clicks')])
+def show_Div_eda(n):
+    if (n):
+        return {'display': 'block'}, False, True
+    else:
+        raise PreventUpdate
+
+
+############################################ CALLBACKS TO  hide/show div ################################################
+
+@app.callback(
+    [Output('card_tp_body', 'children'), Output('title_div', 'children'), Output('tab-elasticity', 'disabled')],
+    [Input('button_next', 'n_clicks'), Input('radio_ppo', 'value')])
+def update_tp_card(n, radio_po):
+    if (n):
+        # print("Entered here")
+
+        if (radio_po == "PO"):
+            # df = pd.read_excel(r"C:\Users\Kapila Akshay\Desktop\HealthCare POC\3. Dash\
+            #     parameter-optimisation\parameter-optimisation\Data\filtered_data_ppo_v1.xlsx")
+
+            df = pd.read_excel(os.path.join(Data, 'demo_data.xlsx'))
+            dp_value = pd.DataFrame(columns=["variable"])
+            dp_value.to_excel(os.path.join(Data, "list_feat_1.xlsx"))
+            dp_value.to_excel(os.path.join(Data, "list_feat_2.xlsx"))
+            dp_value.to_excel(os.path.join(Data, "list_feat_3.xlsx"))
+            print(df.shape)
+            return df.shape[1] - 2, 'Parameter Optimization', False
+        else:
+            raise PreventUpdate
+    else:
+        raise PreventUpdate
