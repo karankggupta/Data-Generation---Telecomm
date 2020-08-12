@@ -1,6 +1,9 @@
 # from poc_utils import *
 from dash.exceptions import PreventUpdate
+import numpy as np
 import pandas as pd
+import sys
+from io import StringIO
 import dash_core_components as dcc
 from dash_table import FormatTemplate
 import math
@@ -9,6 +12,7 @@ import dash
 import dash_table
 import dash_html_components as html
 import dash_bootstrap_components as dbc
+import datetime
 # from dash.dependencies import Input, Output
 import os
 # from app import app
@@ -53,6 +57,15 @@ Data = pd.DataFrame({
     'MC_overhead_temp': [0.2, 0.4, 0.6, 0.8, 1],
     'ROT_Deg_C': [2, 4, 6, 8, 10]
 })
+
+
+stdout = sys.stdout
+s = StringIO()
+sys.stdout = s
+Data.info()
+sys.stdout = stdout
+s.seek(0)
+data_info = s.read()
 
 # read user created packages
 
@@ -155,8 +168,9 @@ ads_creation_page = html.Div(style={"backgroundColor": "white"},
                                                      # Allow multiple files to be uploaded
                                                      multiple=True, disable_click=True
                                                  ), width=4, className="center_align"),
-                                                 dbc.Col(html.H4("[Process Params.xlsx]", id="filename_pp", style={
-                                                     'fontSize': '9', 'text-align': 'left'}), width=3),
+                                                 html.Div(dbc.Col(html.H4("[Process Params.xlsx]", id="filename_pp",
+                                                                          style={'fontSize': '9', 'text-align': 'left'})
+                                                                  , width=3), title=data_info)
                                                  # dbc.Col([],width = 1.5),
 
                                              ], align='center',
@@ -370,8 +384,8 @@ ads_creation_page = html.Div(style={"backgroundColor": "white"},
                                          #            disabled=True), width=6
                                      ),
                                      dbc.Col(
-                                        dbc.Button("Generate EDA Plots", id="button_generate_eda", size="sm",
-                                                   color="success", className="mr-1", disabled=True,
+                                        dbc.Button("Generate EDA Plots", id="button_generate_eda", size="lg",
+                                                   color="success", className="mr-1", disabled=False, active=True,
                                                    style={'margin-left': '38em'}), width=6
                                      ),
                                  ]),
@@ -389,7 +403,7 @@ ads_creation_page = html.Div(style={"backgroundColor": "white"},
                                          html.H2('EDA PLOTS')
                                      ], width={'size': 3, 'offset': 5}, className="center_align")
                                  ]),
-                                 
+
                                  dbc.Row([  # R4 for Scatter plots
                                      html.Div([], style={'margin-left': '2em', 'margin-top': '5em'},
                                               id='div_scatter_plot')
@@ -428,23 +442,30 @@ app.layout = html.Div([app_page_layout,
 @app.callback(
     Output('div_scatter_plot', 'children'),
     [Input('drop_down_y', 'value'),
-     Input('drop_down_x', 'value')]
+     Input('drop_down_x', 'value'),
+     Input('button_generate_eda', 'n_clicks')]
 )
-def plot_eda_button(y_axis, x_axis, data1=Data):
-    fig = go.Figure(data=[go.Scatter(
-        x=data1[x_axis],
-        y=data1[y_axis],
-        mode='markers'
-    )])
+def plot_eda_button(y_axis, x_axis, n_clicks, data1=Data):
 
-    fig.update_layout(title_x=0.5, title_y=0.89, yaxis_title=y_axis, xaxis_title=x_axis, title=dict(
-        text='Yield of ' + y_axis + " in percent",
-        font=dict(
-            size=14,
+    if n_clicks is not None:
+        fig = go.Figure(data=[go.Scatter(
+            x=data1[x_axis],
+            y=data1[y_axis],
+            mode='markers'
+        )])
+
+        fig.update_layout(title_x=0.5, title_y=0.89, yaxis_title=y_axis, xaxis_title=x_axis, title=dict(
+            text='Yield of ' + y_axis + " in percent",
+            font=dict(
+                size=14,
+            )
         )
-    )
                       )
-    return dcc.Graph(id='scatter', figure=fig, style={'height': '44em', 'width': '150em'})
+        return dcc.Graph(id='scatter', figure=fig, style={'height': '44em', 'width': '150em'})
+
+    else:
+        PreventUpdate
+
 
 
 ################################################ CALLBACKS TO PRINT FILE NAMES   #################################################
